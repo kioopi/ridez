@@ -1,6 +1,6 @@
 import Config
 
-config :ridez, ecto_repos: [Ridez.Repo]
+config :ridez, ecto_repos: [Ridez.Repo], ash_domains: [Ridez.Rides]
 
 config :ash,
   allow_forbidden_field_for_relationships_by_default?: true,
