@@ -49,15 +49,15 @@ defmodule Ridez.Ride.RideTest do
       assert ride.taken_seats == [:backseat]
     end
 
-    test "list available seats of a ride" do
+    test "list available seat types of a ride" do
       ride = generate(ride(seats: %{driver: 1, backseat: 1}))
       person = generate(person())
 
       Rides.join_ride!(ride.id, person.id, :backseat)
 
-      ride = Ash.load!(ride, [:available_seats])
+      ride = Ash.load!(ride, [:available_seat_types])
 
-      assert ride.available_seats == [:driver]
+      assert ride.available_seat_types == [:driver]
     end
   end
 end
