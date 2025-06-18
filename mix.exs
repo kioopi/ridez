@@ -39,9 +39,6 @@ defmodule Ridez.MixProject do
     [test: ["ash.setup --quiet", "test"], setup: "ash.setup"]
   end
 
-  defp elixirc_paths(:test),
-    do: elixirc_paths(:dev) ++ ["test/support"]
-
-  defp elixirc_paths(_),
-    do: ["lib"]
+  defp elixirc_paths(:test), do: elixirc_paths(:dev) ++ ["test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 end
