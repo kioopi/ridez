@@ -3,14 +3,13 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
   import Ridez.Rides.Generator
   alias Ridez.Rides
-  alias Ridez.Rides.{Ride, Person, PersonRide}
 
   describe "taken_seat_counts aggregate" do
     test "returns empty map for ride with no passengers" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2}))
-      
+
       ride = Ash.load!(ride, [:taken_seat_counts])
-      
+
       assert ride.taken_seat_counts == %{}
     end
 
@@ -32,10 +31,9 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
     test "handles multiple people in same seat type" do
       ride = generate(ride(seats: %{backseat: 4}))
-      people = for _ <- 1..3, do: generate(person())
 
       # All join backseat
-      for person <- people do
+      for person <- generate_many(person(), 3) do
         Rides.join_ride!(ride.id, person.id, :backseat)
       end
 
@@ -48,9 +46,9 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
   describe "total_seat_types calculation" do
     test "returns all seat types from seats map" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2, window: 1}))
-      
+
       ride = Ash.load!(ride, [:total_seat_types])
-      
+
       # Convert strings to atoms for comparison since map keys are strings in DB
       expected_types = [:driver, :backseat, :window]
       assert Enum.sort(ride.total_seat_types) == Enum.sort(expected_types)
@@ -58,17 +56,17 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
     test "returns single seat type for single-seat ride" do
       ride = generate(ride(seats: %{driver: 1}))
-      
+
       ride = Ash.load!(ride, [:total_seat_types])
-      
+
       assert ride.total_seat_types == [:driver]
     end
 
     test "preserves seat type order" do
       ride = generate(ride(seats: %{a: 1, z: 1, m: 1}))
-      
+
       ride = Ash.load!(ride, [:total_seat_types])
-      
+
       # Should contain all types regardless of order
       assert length(ride.total_seat_types) == 3
       assert :a in ride.total_seat_types
@@ -79,17 +77,28 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
   describe "available_seat_counts calculation" do
     test "shows all seats available when no passengers" do
-      ride = generate(ride(seats: %{driver: 1, backseat: 2}))
-      
+      # ride = generate(ride(seats: %{driver: 1, backseat: 2}))
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [driver: 1, backseat: 2],
+          required_license: :car
+        })
+        |> Ash.create!()
+
       ride = Ash.load!(ride, [:available_seat_counts])
-      
+
       assert ride.available_seat_counts == %{"driver" => 1, "backseat" => 2}
     end
 
     test "calculates available seats correctly with passengers" do
-      ride = generate(ride(seats: %{driver: 1, backseat: 3, window: 2}))
-      person1 = generate(person())
-      person2 = generate(person())
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [driver: 1, backseat: 3, window: 2],
+          required_license: :car
+        })
+        |> Ash.create!()
+
+      [person1, person2] = generate_many(person(), 2)
 
       # Take some seats
       Rides.join_ride!(ride.id, person1.id, :driver)
@@ -98,17 +107,15 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
       ride = Ash.load!(ride, [:available_seat_counts])
 
       assert ride.available_seat_counts == %{
-        "driver" => 0,
-        "backseat" => 2, 
-        "window" => 2
-      }
+               "driver" => 0,
+               "backseat" => 2,
+               "window" => 2
+             }
     end
 
     test "handles fully booked seat types" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2}))
-      person1 = generate(person())
-      person2 = generate(person())
-      person3 = generate(person())
+      [person1, person2, person3] = generate_many(person(), 3)
 
       # Fill all seats
       Rides.join_ride!(ride.id, person1.id, :driver)
@@ -124,9 +131,9 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
   describe "available_seat_types calculation" do
     test "returns all seat types when no passengers" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2, window: 1}))
-      
+
       ride = Ash.load!(ride, [:available_seat_types])
-      
+
       expected_types = [:driver, :backseat, :window]
       assert Enum.sort(ride.available_seat_types) == Enum.sort(expected_types)
     end
@@ -160,7 +167,13 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
     end
 
     test "includes partially filled seat types" do
-      ride = generate(ride(seats: %{driver: 1, backseat: 3}))
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [driver: 1, backseat: 3],
+          required_license: :car
+        })
+        |> Ash.create!()
+
       person1 = generate(person())
 
       # Partially fill backseat
@@ -176,9 +189,9 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
   describe "occupied_seat_types calculation" do
     test "returns empty list for ride with no passengers" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2}))
-      
+
       ride = Ash.load!(ride, [:occupied_seat_types])
-      
+
       assert ride.occupied_seat_types == []
     end
 
@@ -215,9 +228,9 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
   describe "has_available_seats? calculation" do
     test "returns true for ride with no passengers" do
       ride = generate(ride(seats: %{driver: 1, backseat: 2}))
-      
+
       ride = Ash.load!(ride, [:has_available_seats?])
-      
+
       assert ride.has_available_seats? == true
     end
 
@@ -249,7 +262,13 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
   describe "integration scenarios - multiple calculations together" do
     test "all calculations work consistently together" do
-      ride = generate(ride(seats: %{driver: 1, backseat: 3, window: 2}))
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [driver: 1, backseat: 3, window: 2],
+          required_license: :car
+        })
+        |> Ash.create!()
+
       person1 = generate(person())
       person2 = generate(person())
 
@@ -257,14 +276,15 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
       Rides.join_ride!(ride.id, person1.id, :driver)
       Rides.join_ride!(ride.id, person2.id, :backseat)
 
-      ride = Ash.load!(ride, [
-        :taken_seat_counts,
-        :total_seat_types,
-        :available_seat_counts,
-        :available_seat_types,
-        :occupied_seat_types,
-        :has_available_seats?
-      ])
+      ride =
+        Ash.load!(ride, [
+          :taken_seat_counts,
+          :total_seat_types,
+          :available_seat_counts,
+          :available_seat_types,
+          :occupied_seat_types,
+          :has_available_seats?
+        ])
 
       # Verify taken_seat_counts
       assert ride.taken_seat_counts == %{"driver" => 1, "backseat" => 1}
@@ -275,10 +295,10 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
       # Verify available_seat_counts
       assert ride.available_seat_counts == %{
-        "driver" => 0,
-        "backseat" => 2,
-        "window" => 2
-      }
+               "driver" => 0,
+               "backseat" => 2,
+               "window" => 2
+             }
 
       # Verify available_seat_types (driver is full, backseat and window available)
       expected_available = [:backseat, :window]
@@ -301,12 +321,13 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
       Rides.join_ride!(ride.id, person1.id, :driver)
       Rides.join_ride!(ride.id, person2.id, :passenger)
 
-      ride = Ash.load!(ride, [
-        :taken_seat_counts,
-        :available_seat_counts,
-        :available_seat_types,
-        :has_available_seats?
-      ])
+      ride =
+        Ash.load!(ride, [
+          :taken_seat_counts,
+          :available_seat_counts,
+          :available_seat_types,
+          :has_available_seats?
+        ])
 
       # All seats taken
       assert ride.taken_seat_counts == %{"driver" => 1, "passenger" => 1}
@@ -317,14 +338,19 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
     test "calculations handle complex seat configuration" do
       # Test with many seat types and varying capacities
-      ride = generate(ride(seats: %{
-        driver: 1,
-        front_passenger: 1, 
-        back_left: 1,
-        back_middle: 1,
-        back_right: 1,
-        trunk: 2
-      }))
+      ride =
+        generate(
+          ride(
+            seats: %{
+              driver: 1,
+              front_passenger: 1,
+              back_left: 1,
+              back_middle: 1,
+              back_right: 1,
+              trunk: 2
+            }
+          )
+        )
 
       people = for _ <- 1..4, do: generate(person())
 
@@ -334,19 +360,20 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
       Rides.join_ride!(ride.id, Enum.at(people, 2).id, :trunk)
       Rides.join_ride!(ride.id, Enum.at(people, 3).id, :trunk)
 
-      ride = Ash.load!(ride, [
-        :taken_seat_counts,
-        :available_seat_types,
-        :occupied_seat_types,
-        :has_available_seats?
-      ])
+      ride =
+        Ash.load!(ride, [
+          :taken_seat_counts,
+          :available_seat_types,
+          :occupied_seat_types,
+          :has_available_seats?
+        ])
 
       # Verify taken seats
       assert ride.taken_seat_counts == %{
-        "driver" => 1,
-        "back_left" => 1, 
-        "trunk" => 2
-      }
+               "driver" => 1,
+               "back_left" => 1,
+               "trunk" => 2
+             }
 
       # Available types should exclude driver, back_left, trunk (all full)
       available_types = [:front_passenger, :back_middle, :back_right]
@@ -379,11 +406,15 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
     end
 
     test "handles ride with large seat capacity" do
-      ride = generate(ride(seats: %{bus_seat: 50}))
-      people = for _ <- 1..25, do: generate(person())
+      # Create ride with explicit large capacity
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [bus_seat: 50]
+        })
+        |> Ash.create!()
 
       # Fill half the seats
-      for person <- people do
+      for person <- generate(person(), 25) do
         Rides.join_ride!(ride.id, person.id, :bus_seat)
       end
 
@@ -411,7 +442,13 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
 
     test "handles ride modifications after passengers join" do
       # This tests that calculations update correctly when data changes
-      ride = generate(ride(seats: %{driver: 1, backseat: 2}))
+      ride =
+        Ash.Changeset.for_create(Ridez.Rides.Ride, :create, %{
+          seats: [driver: 1, backseat: 2],
+          required_license: :car
+        })
+        |> Ash.create!()
+
       person1 = generate(person())
       person2 = generate(person())
 

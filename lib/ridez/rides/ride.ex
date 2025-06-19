@@ -40,6 +40,19 @@ defmodule Ridez.Rides.Ride do
 
   aggregates do
     list :taken_seats, :person_rides, field: :seat
+  end
+
+  calculations do
+    calculate :total_seat_types, {:array, :atom}, {Ridez.Rides.Ride.Calculations.TotalSeatTypes, []}
     
+    calculate :taken_seat_counts, :map, {Ridez.Rides.Ride.Calculations.TakenSeatCounts, []}
+    
+    calculate :available_seat_counts, :map, {Ridez.Rides.Ride.Calculations.AvailableSeatCounts, []}
+    
+    calculate :available_seat_types, {:array, :atom}, {Ridez.Rides.Ride.Calculations.AvailableSeatTypes, []}
+    
+    calculate :occupied_seat_types, {:array, :atom}, {Ridez.Rides.Ride.Calculations.OccupiedSeatTypes, []}
+    
+    calculate :has_available_seats?, :boolean, {Ridez.Rides.Ride.Calculations.HasAvailableSeats, []}
   end
 end
