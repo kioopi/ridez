@@ -14,7 +14,7 @@ defmodule Ridez.Rides.Generator do
             StreamData.atom(:alphanumeric),
             StreamData.integer(1..10),
             min_length: 1,
-            max_lenght: 5
+            max_length: 5
           )
       ],
       overrides: opts

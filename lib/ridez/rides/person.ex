@@ -7,6 +7,8 @@ defmodule Ridez.Rides.Person do
   end
 
   actions do
+    default_accept [:licences]
+
     defaults [:read, :create]
   end
 
