@@ -7,7 +7,11 @@ defmodule Ridez.Rides.PersonRide do
   end
 
   actions do
-    defaults [:read, create: [:seat, :person_id, :ride_id]]
+    defaults [:read, :destroy, create: [:seat, :person_id, :ride_id]]
+  end
+
+  validations do
+    validate {Ridez.Validations.SeatAvailable, []}
   end
 
   attributes do
