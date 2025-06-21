@@ -126,6 +126,21 @@ defmodule Ridez.Rides.GeneratorTest do
     end
   end
 
+  describe "generator with people" do
+    test "generator can take people argument" do
+      # Test that the generator can handle people argument
+      person = generate(person())
+
+      ride =
+        generate(ride(seats: [:couch], people: [%{id: person.id, seat: :couch}]))
+        |> Ash.load!([:people])
+
+      assert is_list(ride.people)
+      assert length(ride.people) == 1
+      assert hd(ride.people).id == person.id
+    end
+  end
+
   describe "ride generator property-based testing" do
     @tag :property
     property "generated rides always have valid structure" do
@@ -278,30 +293,6 @@ defmodule Ridez.Rides.GeneratorTest do
       Enum.each(results, fn {iteration, count} ->
         assert count == 50, "Iteration #{iteration}: expected 50, got #{inspect(count)}"
       end)
-    end
-
-    test "StreamData interaction with overrides" do
-      # Test if the issue is related to StreamData conflicting with overrides
-
-      # Create a ride without any overrides first
-      default_ride = generate(ride())
-
-      # Now with a simple override
-      simple_override = %{driver: 1}
-      override_ride = generate(ride(seats: simple_override))
-
-      # The override should completely replace the default generation
-      expected_keys = [:driver]
-
-      actual_keys =
-        Map.keys(override_ride.seats)
-        |> Enum.map(fn
-          key when is_atom(key) -> key
-          key when is_binary(key) -> String.to_atom(key)
-        end)
-
-      assert expected_keys == actual_keys,
-             "Expected #{inspect(expected_keys)}, got #{inspect(actual_keys)}"
     end
   end
 

@@ -7,8 +7,8 @@ defmodule Ridez.Ride.RideTest do
   alias Rides.PersonRide
   alias Ash.Changeset
 
-  describe "Ride" do
-    test "creation" do
+  describe "Ride creation" do
+    test "simple creation" do
       motorcycle =
         Changeset.for_create(Ride, :create, %{
           seats: [:driver, :backseat],
@@ -38,6 +38,51 @@ defmodule Ridez.Ride.RideTest do
       assert hd(ride.people).id == person.id
     end
 
+    test "create ride with person" do
+      person = generate(person())
+
+      motorcycle =
+        Changeset.for_create(Ride, :create, %{
+          seats: [:driver, :backseat],
+          people: [%{id: person.id, seat: :driver}]
+        })
+        |> Ash.create!()
+
+      motorcycle =
+        Ash.load!(motorcycle, [:available_seat_types, people: [seat: [ride_id: motorcycle.id]]])
+
+      driver = hd(motorcycle.people)
+
+      assert driver.id == person.id
+      # seat is loaded
+      assert driver.seat == :driver
+      # available seats are correctly calculated
+      assert motorcycle.available_seat_types == [:backseat]
+    end
+
+    @tag :skip
+    test "create ride with person with shortened syntax" do
+      # person = generate(person())
+
+      motorcycle =
+        Changeset.for_create(Ride, :create, %{
+          seats: [:driver, :backseat]
+          #   people: [person.id: :driver],
+        })
+        |> Ash.create!()
+
+      motorcycle = Ash.load!(motorcycle, [:people, :available_seat_types])
+
+      driver = hd(motorcycle.people)
+
+      assert motorcycle.seats["driver"] == 1
+      # assert driver.id == person.id
+      assert driver.seat == :driver
+      assert motorcycle.available_seat_types == [:backseat]
+    end
+  end
+
+  describe "Ride calculations" do
     test "list taken seats of a ride" do
       ride = generate(ride(seats: %{driver: 1, backseat: 1}))
       person = generate(person())

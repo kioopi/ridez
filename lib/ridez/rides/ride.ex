@@ -16,6 +16,9 @@ defmodule Ridez.Rides.Ride do
       primary? true
       accept [:required_license]
       argument :seats, :term
+      argument :people, {:array, :map}
+
+      change manage_relationship(:people, on_lookup: :relate, join_keys: [:seat])
     end
   end
 
