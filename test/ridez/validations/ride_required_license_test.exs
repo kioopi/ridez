@@ -83,13 +83,14 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
       
       person_commercial = generate(person(licences: [:commercial]))
       person_regular = generate(person(licences: [:car]))
+      person_regular2 = generate(person(licences: [:car]))
 
       # Only person with commercial license can take driver seat
       assert {:ok, _} = Rides.join_ride(ride.id, person_commercial.id, :driver)
       
       # Person without commercial license can take other seats
       assert {:ok, _} = Rides.join_ride(ride.id, person_regular.id, :front_passenger)
-      assert {:ok, _} = Rides.join_ride(ride.id, person_regular.id, :backseat_left)
+      assert {:ok, _} = Rides.join_ride(ride.id, person_regular2.id, :backseat_left)
     end
 
     test "validation prevents driver seat change when person doesn't have required license" do

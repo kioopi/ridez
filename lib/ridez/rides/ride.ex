@@ -16,14 +16,21 @@ defmodule Ridez.Rides.Ride do
       primary? true
       accept [:required_license]
       argument :seats, :term
-      argument :people, {:array, :map}
+      # {:array, :map} or {:array, :tuple}
+      argument :people, :term
+
+      # change to accept simplified seat defintion
+      change Ridez.Changes.SeatsMap
+      # change to accept simplified people definition
+      change Ridez.Changes.PeopleList
+      # change to update seats based on people
+      change Ridez.Changes.PeopleSeats
+
+      # validate seat availability
+      validate Ridez.Validations.CreateRide
 
       change manage_relationship(:people, on_lookup: :relate, join_keys: [:seat])
     end
-  end
-
-  changes do
-    change Ridez.Changes.SeatsMap
   end
 
   attributes do

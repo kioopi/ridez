@@ -60,25 +60,54 @@ defmodule Ridez.Ride.RideTest do
       assert motorcycle.available_seat_types == [:backseat]
     end
 
-    @tag :skip
     test "create ride with person with shortened syntax" do
-      # person = generate(person())
+      person = generate(person())
 
       motorcycle =
         Changeset.for_create(Ride, :create, %{
-          seats: [:driver, :backseat]
-          #   people: [person.id: :driver],
+          seats: [:driver, :backseat],
+          people: [driver: person.id]
         })
         |> Ash.create!()
 
-      motorcycle = Ash.load!(motorcycle, [:people, :available_seat_types])
+      motorcycle = Ash.load!(motorcycle, people: [seat: [ride_id: motorcycle.id]])
 
       driver = hd(motorcycle.people)
 
-      assert motorcycle.seats["driver"] == 1
-      # assert driver.id == person.id
+      assert driver.id == person.id
       assert driver.seat == :driver
-      assert motorcycle.available_seat_types == [:backseat]
+    end
+
+    test "when creating a ride with people, seats are auto added" do
+      motorcycle =
+        Changeset.for_create(Ride, :create, %{
+          seats: [backseat: 3],
+          people: [driver: generate(person()).id, shotgun: generate(person()).id]
+        })
+        |> Ash.create!()
+
+      motorcycle =
+        Ash.load!(motorcycle, [:available_seat_counts, people: [seat: [ride_id: motorcycle.id]]])
+
+      assert motorcycle.seats == %{"driver" => 1, "shotgun" => 1, "backseat" => 3}
+      assert motorcycle.available_seat_counts == %{"driver" => 0, "shotgun" => 0, "backseat" => 3}
+
+      assert Enum.any?(motorcycle.people, fn p -> p.seat == :driver end)
+      assert Enum.any?(motorcycle.people, fn p -> p.seat == :shotgun end)
+    end
+
+    test "explicit ammount of seats win over people" do
+      people = generate_many(person(), 3)
+
+      # when there is an explicit amount of seats set in the seats argument,
+      # there can not be more pople than seats
+      assert_raise Ash.Error.Invalid, fn ->
+        Changeset.for_create(Ride, :create, %{
+          seats: [bench: 2],
+          people: Enum.map(people, &{:bench, &1.id})
+        })
+        |> Ash.create!()
+      end
     end
   end
 

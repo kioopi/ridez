@@ -6,6 +6,13 @@ defmodule Ridez.Rides.PersonRide do
     repo Ridez.Repo
   end
 
+  identities do
+    identity :unique_person_per_ride, [:person_id, :ride_id] do
+      eager_check? true
+      message "Person is already on this ride"
+    end
+  end
+
   actions do
     defaults [:read, :destroy, create: [:seat, :person_id, :ride_id]]
 
