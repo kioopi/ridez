@@ -8,6 +8,13 @@ defmodule Ridez.Rides.PersonRide do
 
   actions do
     defaults [:read, :destroy, create: [:seat, :person_id, :ride_id]]
+
+    read :seat do
+      argument :ride_id, :uuid, allow_nil?: false
+      argument :person_id, :uuid, allow_nil?: false
+
+      prepare build(select: [:seat])
+    end
   end
 
   validations do

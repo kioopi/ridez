@@ -13,6 +13,7 @@ defmodule Ridez.Rides do
 
     resource Ridez.Rides.PersonRide do
       define :join_ride, action: :create, args: [:ride_id, :person_id, :seat]
+      define :get_seat, action: :seat, get?: true, args: [:ride_id, :person_id]
     end
   end
 end
