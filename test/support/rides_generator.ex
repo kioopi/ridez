@@ -15,7 +15,8 @@ defmodule Ridez.Rides.Generator do
             StreamData.integer(1..10),
             min_length: 1,
             max_length: 5
-          )
+          ),
+        required_license: nil
       ],
       overrides: opts
     )

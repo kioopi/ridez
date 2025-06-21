@@ -399,7 +399,7 @@ defmodule Ridez.Rides.RideSeatCalculationsTest do
         })
         |> Ash.create!()
 
-      [person1, person2] = generate_many(person(), 2)
+      [person1, person2] = generate_many(person(licences: [:car]), 2)
 
       # Initial state
       Rides.join_ride!(ride.id, person1.id, :driver)

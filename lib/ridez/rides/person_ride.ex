@@ -19,6 +19,7 @@ defmodule Ridez.Rides.PersonRide do
 
   validations do
     validate {Ridez.Validations.SeatAvailable, []}
+    validate {Ridez.Validations.RequiredLicense, []}
   end
 
   attributes do
