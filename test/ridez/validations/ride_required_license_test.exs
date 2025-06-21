@@ -40,7 +40,7 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
       _person_right_license = generate(person(licences: [:motorcycle]))
 
       assert {:ok, _} = Rides.join_ride(ride.id, person_no_license.id, :backseat)
-      
+
       ride2 = generate(ride(seats: [:driver, :front_passenger], required_license: :truck))
       person_truck_license = generate(person(licences: [:truck]))
       assert {:ok, _} = Rides.join_ride(ride2.id, person_wrong_license.id, :front_passenger)
@@ -53,7 +53,7 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
       person_with_license = generate(person(licences: [:motorcycle]))
 
       assert {:ok, _} = Rides.join_ride(ride.id, person_no_license.id, :driver)
-      
+
       ride2 = generate(ride(seats: [:driver, :backseat], required_license: nil))
       assert {:ok, _} = Rides.join_ride(ride2.id, person_with_license.id, :driver)
     end
@@ -76,18 +76,21 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
     end
 
     test "validation works with complex seat configurations" do
-      ride = generate(ride(
-        seats: [:driver, :front_passenger, :backseat_left, :backseat_right], 
-        required_license: :commercial
-      ))
-      
+      ride =
+        generate(
+          ride(
+            seats: [:driver, :front_passenger, :backseat_left, :backseat_right],
+            required_license: :commercial
+          )
+        )
+
       person_commercial = generate(person(licences: [:commercial]))
       person_regular = generate(person(licences: [:car]))
       person_regular2 = generate(person(licences: [:car]))
 
       # Only person with commercial license can take driver seat
       assert {:ok, _} = Rides.join_ride(ride.id, person_commercial.id, :driver)
-      
+
       # Person without commercial license can take other seats
       assert {:ok, _} = Rides.join_ride(ride.id, person_regular.id, :front_passenger)
       assert {:ok, _} = Rides.join_ride(ride.id, person_regular2.id, :backseat_left)
@@ -100,7 +103,7 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
 
       # Person without license joins as passenger
       {:ok, _person_ride} = Rides.join_ride(ride.id, person_no_license.id, :backseat)
-      
+
       # Person with license takes driver seat
       Rides.join_ride!(ride.id, person_with_license.id, :driver)
 
@@ -121,11 +124,11 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
 
     test "edge case: person with nil in licenses array cannot take driver seat when license required" do
       ride = generate(ride(seats: [:driver], required_license: :motorcycle))
-      
+
       # This tests edge case handling if nil somehow gets into licenses array
       # The generator might not allow this, but testing defensive behavior
       person = generate(person(licences: [:car]))
-      
+
       assert {:error, _} = Rides.join_ride(ride.id, person.id, :driver)
     end
 
@@ -134,10 +137,26 @@ defmodule Ridez.Validations.RideRequiredLicenseTest do
       person = generate(person(licences: [:car]))
 
       {:error, error} = Rides.join_ride(ride.id, person.id, :driver)
-      
+
       # Check that error contains helpful information about license requirement
       # The exact error structure will depend on how Ash formats validation errors
       assert is_map(error) or is_list(error)
+    end
+
+    test "validates license when creating ride with people" do
+      person = generate(person(licences: [:car]))
+
+      {:error, error} =
+        Ash.Changeset.for_create(Rides.Ride, :create, %{
+          seats: [:driver],
+          people: [%{id: person.id, seat: :driver}],
+          required_license: :motorcycle
+        })
+        |> Ash.create()
+
+      %{errors: [%{error: message}]} = error
+
+      assert message =~ "Driver seat requires motorcycle license, person has: car"
     end
   end
 end
