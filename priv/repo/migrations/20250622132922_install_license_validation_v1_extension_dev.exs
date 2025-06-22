@@ -1,4 +1,4 @@
-defmodule Ridez.Repo.Migrations.InstallLicenseValidationV120250622132921 do
+defmodule Ridez.Repo.Migrations.InstallLicenseValidationV120250622132922 do
   @moduledoc """
   Installs any extensions that are mentioned in the repo's `installed_extensions/0` callback
 
