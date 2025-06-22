@@ -108,9 +108,9 @@ defmodule Ridez.Rides.PersonRideUniquenessTest do
             |> Enum.map(& &1.message)
             |> Enum.join(", ")
 
-          assert String.contains?(error_messages, "already") or
-                   String.contains?(error_messages, "duplicate") or
-                   String.contains?(error_messages, "unique")
+          assert String.contains?(error_messages, "already") or 
+                 String.contains?(error_messages, "duplicate") or
+                 String.contains?(error_messages, "unique")
       end
     end
 
